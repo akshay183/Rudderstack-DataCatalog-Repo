@@ -1,0 +1,36 @@
+import { Schema, model, Document } from 'mongoose';
+import { IEvent } from './Event';
+import { IProperty } from './Property';
+
+interface ITrackingPlan extends Document {
+  name: string;
+  description?: string;
+  events: {
+    event: IEvent['_id'];
+    properties: {
+      property: IProperty['_id'];
+      required: boolean;
+    }[];
+    additional_properties: boolean;
+  }[];
+  created_at: Date;
+  updated_at: Date;
+}
+
+const tracking_plan_schema = new Schema({
+  name: { type: String, required: true, unique: true, minlength: 3, maxlength: 65 },
+  description: { type: String, maxlength: 100 },
+  events: [{
+    event: { type: Schema.Types.ObjectId, ref: 'Event' },
+    properties: [{
+      property: { type: Schema.Types.ObjectId, ref: 'Property' },
+      required: { type: Boolean, default: false },
+    }],
+    additional_properties: { type: Boolean, default: true },
+  }],
+}, { timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' } });
+
+const TrackingPlan = model<ITrackingPlan>('TrackingPlan', tracking_plan_schema);
+
+export default TrackingPlan;
+export { ITrackingPlan };
