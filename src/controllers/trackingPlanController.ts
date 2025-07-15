@@ -1,70 +1,22 @@
 import { Request, Response } from 'express';
 import TrackingPlan from '../models/TrackingPlan';
 import Event from '../models/Event';
-import Property from '../models/Property';
+import Property, { IProperty } from '../models/Property';
 import mongoose from 'mongoose';
+import { compareEventData } from '../utils/Utils';
 
 export const create_tracking_plan = async (req: Request, res: Response) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
     try {
-        const { name, description, events } = req.body;
-
+        const { name, description } = req.body;
         const new_tracking_plan = new TrackingPlan({ name, description, events: [] });
 
-        if (events && events.length > 0) {
-            for (const event_data of events) {
-                let event = await Event.findOne({ name: event_data.name, type: event_data.type }).session(session);
-                if (!event) {
-                    if (event_data.type !== 'track' && event_data.name) {
-                        throw new Error("Event name must be empty if type is not 'track'");
-                    }
-                    event = new Event({ name: event_data.name, type: event_data.type, description: event_data.description, validation: event_data.validation });
-                    await event.save({ session });
-                } else {
-                    if (event.description !== event_data.description) {
-                        return res.status(409).json({ message: `Event with name ${event.name} and type ${event.type} already exists with a different description.` });
-                    }
-                }
-
-                const new_event = {
-                    event: event._id,
-                    properties: [] as any[],
-                    additional_properties: event_data.additional_properties
-                };
-
-                if (event_data.properties && event_data.properties.length > 0) {
-                    for (const prop_data of event_data.properties) {
-                        let property = await Property.findOne({ name: prop_data.name, type: prop_data.type }).session(session);
-                        if (!property) {
-                            property = new Property({ name: prop_data.name, type: prop_data.type, description: prop_data.description, validation: prop_data.validation });
-                            await property.save({ session });
-                        } else {
-                            if (property.description !== prop_data.description) {
-                                return res.status(409).json({ message: `Property with name ${property.name} and type ${property.type} already exists with a different description.` });
-                            }
-                        }
-                        new_event.properties.push({
-                            property: property._id,
-                            required: prop_data.required
-                        });
-                    }
-                }
-                new_tracking_plan.events.push(new_event);
-            }
-        }
-
-        await new_tracking_plan.save({ session });
-        await session.commitTransaction();
+        await new_tracking_plan.save();
         res.status(201).json(new_tracking_plan);
     } catch (error: any) {
-        await session.abortTransaction();
         if (error.code === 11000) {
             return res.status(409).json({ message: 'Tracking plan with this name already exists.' });
         }
         res.status(400).json({ message: error.message });
-    } finally {
-        session.endSession();
     }
 };
 
@@ -127,12 +79,12 @@ export const delete_tracking_plan = async (req: Request, res: Response) => {
 };
 
 export const upsert_event_to_tracking_plan = async (req: Request, res: Response) => {
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    const properties_inserted: string[] = [];
+    const events_inserted: string[] = [];
     try {
         const { tracking_plan_id, events } = req.body;
 
-        const tracking_plan = await TrackingPlan.findById(tracking_plan_id).session(session);
+        const tracking_plan = await TrackingPlan.findById(tracking_plan_id);
         if (!tracking_plan) {
             return res.status(404).json({ message: 'Tracking plan not found' });
         }
@@ -143,17 +95,16 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
                 return res.status(409).json({ message: `Event with id ${event_data.id} already exists in the tracking plan.` });
             }
 
-            let event = await Event.findOne({ name: event_data.name, type: event_data.type }).session(session);
+            let event = await Event.findOne({ name: event_data.name, type: event_data.type });
             if (!event) {
                 if (event_data.type !== 'track' && event_data.name) {
                     throw new Error("Event name must be empty if type is not 'track'");
                 }
                 event = new Event({ name: event_data.name, type: event_data.type, description: event_data.description, validation: event_data.validation });
-                await event.save({ session });
+                await event.save();
+                events_inserted.push(event._id);
             } else {
-                if (event.description !== event_data.description) {
-                    return res.status(409).json({ message: `Event with name ${event.name} and type ${event.type} already exists with a different description.` });
-                }
+                compareEventData(event, event_data, res);
             }
 
             const new_event = {
@@ -164,14 +115,13 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
 
             if (event_data.properties && event_data.properties.length > 0) {
                 for (const prop_data of event_data.properties) {
-                    let property = await Property.findOne({ name: prop_data.name, type: prop_data.type }).session(session);
+                    let property = await Property.findOne({ name: prop_data.name, type: prop_data.type });
                     if (!property) {
                         property = new Property({ name: prop_data.name, type: prop_data.type, description: prop_data.description, validation: prop_data.validation });
-                        await property.save({ session });
+                        await property.save();
+                        properties_inserted.push(property._id);
                     } else {
-                        if (property.description !== prop_data.description) {
-                            return res.status(409).json({ message: `Property with name ${property.name} and type ${property.type} already exists with a different description.` });
-                        }
+                        compareEventData(property, prop_data, res);
                     }
                     new_event.properties.push({
                         property: property._id,
@@ -182,13 +132,11 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
             tracking_plan.events.push(new_event);
         }
 
-        await tracking_plan.save({ session });
-        await session.commitTransaction();
+        await tracking_plan.save();
         res.status(200).json(tracking_plan);
     } catch (error: any) {
-        await session.abortTransaction();
+        await Property.deleteMany({ _id: { $in: properties_inserted } });
+        await Event.deleteMany({ _id: { $in: events_inserted } });
         res.status(400).json({ message: error.message });
-    } finally {
-        session.endSession();
     }
 };

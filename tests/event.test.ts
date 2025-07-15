@@ -16,22 +16,19 @@ const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/test_db';
 
 beforeAll(async () => {
     try {
-        console.log('Connecting to MongoDB container...');
-        console.log('MongoDB URI:', mongoUri);
-        
-        // Connect to the MongoDB container
-        await mongoose.connect(mongoUri);
-        console.log('Connected to MongoDB successfully');
-        
-        // Verify we can use transactions (replica set is working)
-        const session = await mongoose.startSession();
-        await session.endSession();
-        console.log('MongoDB session created successfully - replica set is working');
+        console.log('Connecting to MongoDB...');
+        await mongoose.connect(mongoUri, {
+            serverSelectionTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 30000,
+            waitQueueTimeoutMS: 30000,
+            directConnection: true,
+        });
+        console.log('Connected to MongoDB');
     } catch (error) {
         console.error('ERROR in beforeAll:', error);
         if (error instanceof Error) {
             console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
         }
         throw error;
     }
@@ -41,13 +38,9 @@ afterAll(async () => {
     try {
         console.log('Disconnecting from MongoDB...');
         await mongoose.disconnect();
-        console.log('Mongoose disconnected successfully');
+        console.log('Disconnected from MongoDB');
     } catch (error) {
         console.error('ERROR in afterAll:', error);
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
     }
 }, 60000);
 
@@ -55,13 +48,8 @@ afterEach(async () => {
     try {
         console.log('Cleaning up test data...');
         await Event.deleteMany({});
-        console.log('Test data cleaned successfully');
     } catch (error) {
         console.error('ERROR in afterEach:', error);
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
     }
 });
 

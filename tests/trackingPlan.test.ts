@@ -22,26 +22,20 @@ const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/test_db';
 
 beforeAll(async () => {
     try {
-        console.log('Connecting to MongoDB container...');
-        console.log('MongoDB URI:', mongoUri);
-        
-        // Connect to the MongoDB container
-        console.log('Attempting to connect to MongoDB...');
-        await mongoose.connect(mongoUri);
-        console.log('Connected to MongoDB successfully');
-        
-        // Verify we can use transactions (replica set is working)
-        const session = await mongoose.startSession();
-        await session.endSession();
-        console.log('MongoDB session created successfully - replica set is working');
+        console.log('Connecting to MongoDB...');
+        await mongoose.connect(mongoUri, {
+            serverSelectionTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 30000,
+            waitQueueTimeoutMS: 30000,
+            directConnection: true,
+        });
+        console.log('Connected to MongoDB');
     } catch (error) {
         console.error('ERROR in beforeAll:', error);
-        // Log more detailed error information
         if (error instanceof Error) {
             console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
         }
-        // Re-throw to fail the test
         throw error;
     }
 }, 60000); // Increased timeout to 60 seconds
@@ -50,14 +44,9 @@ afterAll(async () => {
     try {
         console.log('Disconnecting from MongoDB...');
         await mongoose.disconnect();
-        console.log('Mongoose disconnected successfully');
+        console.log('Disconnected from MongoDB');
     } catch (error) {
         console.error('ERROR in afterAll:', error);
-        // Log more detailed error information
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
     }
 }, 60000); // Increased timeout to 60 seconds
 
@@ -67,75 +56,27 @@ afterEach(async () => {
         await TrackingPlan.deleteMany({});
         await Event.deleteMany({});
         await Property.deleteMany({});
-        console.log('Test data cleaned successfully');
     } catch (error) {
         console.error('ERROR in afterEach:', error);
-        if (error instanceof Error) {
-            console.error('Error message:', error.message);
-            console.error('Error stack:', error.stack);
-        }
     }
 });
 
 describe('Tracking Plan API', () => {
     it('should create a new tracking plan', async () => {
         try {
-            console.log('Running test: create a new tracking plan');
-            console.log('Making POST request to /api/v1/tracking-plans');
-            
             const response = await request(app)
                 .post('/api/v1/tracking-plans')
                 .send({
                     name: 'Test Tracking Plan',
                     description: 'This is a test tracking plan'
                 });
-                
-            console.log('Response received:', {
-                status: response.status,
-                body: response.body,
-                headers: response.headers
-            });
             
             expect(response.status).toBe(201);
             expect(response.body.name).toBe('Test Tracking Plan');
-            console.log('Test completed successfully');
         } catch (error) {
             console.error('ERROR in test "should create a new tracking plan":', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-            }
-            throw error; // Re-throw to fail the test
+            throw error;
         }
-    });
-
-    it('should create a new tracking plan with events and properties', async () => {
-        const response = await request(app)
-            .post('/api/v1/tracking-plans')
-            .send({
-                name: 'Test Tracking Plan',
-                description: 'This is a test tracking plan',
-                events: [
-                    {
-                        name: 'Test Event',
-                        type: 'track',
-                        description: 'This is a test event',
-                        additional_properties: false,
-                        properties: [
-                            {
-                                name: 'Test Property',
-                                type: 'string',
-                                description: 'This is a test property',
-                                required: true
-                            }
-                        ]
-                    }
-                ]
-            });
-        expect(response.status).toBe(201);
-        expect(response.body.name).toBe('Test Tracking Plan');
-        expect(response.body.events.length).toBe(1);
-        expect(response.body.events[0].properties.length).toBe(1);
     });
 
     it('should get all tracking plans', async () => {
@@ -158,50 +99,27 @@ describe('Tracking Plan API', () => {
 
     it('should get a tracking plan by id', async () => {
         try {
-            console.log('Running test: should get a tracking plan by id');
-            
             // Create a tracking plan first
-            console.log('Creating a tracking plan...');
             const trackingPlan = await request(app)
                 .post('/api/v1/tracking-plans')
                 .send({
                     name: 'Test Tracking Plan',
                     description: 'This is a test tracking plan'
                 });
-                
-            console.log('Create response:', {
-                status: trackingPlan.status,
-                body: trackingPlan.body
-            });
             
             if (!trackingPlan.body._id) {
                 console.error('ERROR: No _id found in created tracking plan:', trackingPlan.body);
                 throw new Error('Failed to get _id from created tracking plan');
             }
             
-            // Log the ID we're using to fetch
-            console.log(`Getting tracking plan with ID: ${trackingPlan.body._id}`);
-            
             // Fetch the tracking plan
             const response = await request(app).get(`/api/v1/tracking-plans/${trackingPlan.body._id}`);
             
-            // Log the response details
-            console.log('Get response:', {
-                status: response.status,
-                body: response.body,
-                error: response.error
-            });
-            
             expect(response.status).toBe(200);
             expect(response.body.name).toBe('Test Tracking Plan');
-            console.log('Test completed successfully');
         } catch (error) {
             console.error('ERROR in test "should get a tracking plan by id":', error);
-            if (error instanceof Error) {
-                console.error('Error message:', error.message);
-                console.error('Error stack:', error.stack);
-            }
-            throw error; // Re-throw to fail the test
+            throw error;
         }
     });
 

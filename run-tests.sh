@@ -18,19 +18,67 @@ echo "========================================"
 echo "Starting MongoDB service..."
 echo "========================================"
 docker-compose -f docker-compose.test.yml up -d mongo
-sleep 2
+echo "Waiting for MongoDB to start (10 seconds)..."
+sleep 10
+
+# Check if MongoDB is responsive
+echo ""
+echo "========================================"
+echo "Checking MongoDB connection..."
+echo "========================================"
+docker-compose -f docker-compose.test.yml run --rm app node /app/scripts/check-mongo-connection.js
+MONGO_CHECK_STATUS=$?
+
+if [ $MONGO_CHECK_STATUS -ne 0 ]; then
+    echo "WARNING: MongoDB connection check failed with status $MONGO_CHECK_STATUS"
+    echo "Will try to proceed anyway..."
+else
+    echo "MongoDB connection check succeeded."
+fi
 
 echo ""
 echo "========================================"
 echo "Initializing MongoDB replica set..."
 echo "========================================"
-docker-compose -f docker-compose.test.yml run --rm app bash -c "cd /app && ./scripts/mongo-init.sh"
-MONGO_INIT_STATUS=$?
+# Wait for MongoDB to be ready
+echo "Waiting for MongoDB to start..."
+sleep 10
 
-if [ $MONGO_INIT_STATUS -ne 0 ]; then
-    echo "ERROR: MongoDB initialization failed with status $MONGO_INIT_STATUS"
-    echo "Continuing anyway, as it might be already initialized..."
+# Initialize the replica set directly
+echo "Initializing replica set directly..."
+# First try with mongosh (MongoDB 6.0+)
+docker-compose -f docker-compose.test.yml exec -T mongo mongosh --eval "rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]})"
+MONGOSH_INIT_STATUS=$?
+
+if [ $MONGOSH_INIT_STATUS -ne 0 ]; then
+    echo "Mongosh initialization failed, trying with mongo command..."
+    # Try with legacy mongo command
+    docker-compose -f docker-compose.test.yml exec -T mongo mongo --eval "rs.initiate({_id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }]})"
+    MONGO_INIT_STATUS=$?
+    
+    if [ $MONGO_INIT_STATUS -ne 0 ]; then
+        echo "WARNING: MongoDB initialization failed. Tests requiring transactions may fail."
+        echo "Trying one more approach - running the initialization script..."
+        
+        # Try running the script
+        docker-compose -f docker-compose.test.yml exec -T mongo bash -c "chmod +x /scripts/mongo-init.sh && /scripts/mongo-init.sh"
+        SCRIPT_INIT_STATUS=$?
+        
+        if [ $SCRIPT_INIT_STATUS -ne 0 ]; then
+            echo "All initialization methods failed. Continuing anyway, as MongoDB might work for basic operations."
+        else
+            echo "MongoDB replica set initialized successfully via script."
+        fi
+    else
+        echo "MongoDB replica set initialized successfully using mongo command."
+    fi
+else
+    echo "MongoDB replica set initialized successfully using mongosh."
 fi
+
+# Wait a moment for the replica set to stabilize
+echo "Waiting for replica set to stabilize..."
+sleep 5
 
 echo ""
 echo "=============================================="
