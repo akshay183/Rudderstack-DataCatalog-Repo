@@ -16,7 +16,7 @@ router.get('/', get_all_tracking_plans);
 router.get('/:id', get_tracking_plan_by_id);
 router.put('/:id', validate_tracking_plan, update_tracking_plan);
 router.delete('/:id', delete_tracking_plan);
-router.patch('/:tracking_plan_id/event', upsert_event_to_tracking_plan);
+router.patch('/event', upsert_event_to_tracking_plan);
 
 
 export default router;

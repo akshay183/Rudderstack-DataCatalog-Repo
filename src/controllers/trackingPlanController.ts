@@ -118,7 +118,7 @@ export const delete_tracking_plan = async (req: Request, res: Response) => {
     try {
         const tracking_plan = await TrackingPlan.findByIdAndDelete(req.params.id);
         if (!tracking_plan) {
-            return res.status(44).json({ message: 'Tracking plan not found' });
+            return res.status(404).json({ message: 'Tracking plan not found' });
         }
         res.status(200).json({ message: 'Tracking plan deleted successfully' });
     } catch (error: any) {
@@ -130,8 +130,7 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
     const session = await mongoose.startSession();
     session.startTransaction();
     try {
-        const { tracking_plan_id } = req.params;
-        const { events } = req.body;
+        const { tracking_plan_id, events } = req.body;
 
         const tracking_plan = await TrackingPlan.findById(tracking_plan_id).session(session);
         if (!tracking_plan) {
@@ -139,7 +138,7 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
         }
 
         for (const event_data of events) {
-            const existing_event_in_plan = tracking_plan.events.find(e => e.event.toString() === event_data.id);
+            const existing_event_in_plan = tracking_plan.events.find((e: any) => e.event.toString() === event_data.id);
             if (existing_event_in_plan) {
                 return res.status(409).json({ message: `Event with id ${event_data.id} already exists in the tracking plan.` });
             }
