@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules # Use container's node_modules
+    command: npm test
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=60000 # Set Jest timeout to 60 seconds

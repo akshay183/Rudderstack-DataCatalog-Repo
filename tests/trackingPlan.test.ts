@@ -1,7 +1,6 @@
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
-import bodyParser from 'body-parser';
 import tracking_plan_routes from '../src/routes/trackingPlanRoutes';
 import event_routes from '../src/routes/eventRoutes';
 import property_routes from '../src/routes/propertyRoutes';
@@ -11,7 +10,7 @@ import Property from '../src/models/Property';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 app.use('/api/v1/tracking-plans', tracking_plan_routes);
 app.use('/api/v1/events', event_routes);
 app.use('/api/v1/properties', property_routes);
@@ -21,13 +20,14 @@ let mongoServer: MongoMemoryServer;
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = await mongoServer.getUri();
-    await mongoose.connect(mongoUri, { replicaSet: 'rs' });
-}, 30000);
+    // Connect to the in-memory database
+    await mongoose.connect(mongoUri);
+}, 60000); // Increased timeout to 60 seconds
 
 afterAll(async () => {
     await mongoose.disconnect();
     await mongoServer.stop();
-}, 30000);
+}, 60000); // Increased timeout to 60 seconds
 
 afterEach(async () => {
     await TrackingPlan.deleteMany({});

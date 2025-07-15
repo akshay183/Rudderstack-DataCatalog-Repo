@@ -20,6 +20,22 @@ This is a simplified version of a Data Catalog API service that manages events, 
 
 The application will be running on `http://localhost:3000`.
 
+### Running the Tests
+
+To run the tests in a Docker container using Ubuntu:
+
+1. Ensure Docker is running on your system.
+2. Execute the test script from the project root:
+
+   ```bash
+   ./run-tests.sh
+   ```
+
+This script will:
+- Build a Docker container with the test environment
+- Run all tests using Jest
+- Output the test results to the console
+
 ## API Documentation
 
 The base path for all API endpoints is `/api/v1`.
@@ -57,7 +73,7 @@ The base path for all API endpoints is `/api/v1`.
 
 ## Future Improvements
 
-- **Testing**: Implement a comprehensive test suite with unit and integration tests.
+- **Expanded Testing**: Add more test coverage including edge cases and error scenarios.
 - **Authentication and Authorization**: Add authentication and authorization to protect the API endpoints.
 - **Advanced Validation**: Implement more advanced validation rules for properties.
 - **API Documentation**: Use a tool like Swagger or OpenAPI to generate interactive API documentation.
