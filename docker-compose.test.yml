@@ -9,3 +9,16 @@ services:
     environment:
       - NODE_ENV=test
       - JEST_TIMEOUT=60000 # Set Jest timeout to 60 seconds
+      - DEBUG=*            # Enable all debug logs
+      - NODE_OPTIONS=--trace-warnings
+      - MONGO_URI=mongodb://mongo:27017/test_db
+    depends_on:
+      - mongo
+  
+  # MongoDB service for tests
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    # Start with a replica set to support transactions
+    command: mongod --replSet rs0 --bind_ip_all

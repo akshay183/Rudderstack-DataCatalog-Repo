@@ -4,27 +4,65 @@ import mongoose from 'mongoose';
 import bodyParser from 'body-parser';
 import event_routes from '../src/routes/eventRoutes';
 import Event from '../src/models/Event';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+// Import Jest functions
+import { describe, it, beforeAll, afterAll, afterEach, expect } from '@jest/globals';
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 app.use('/api/v1/events', event_routes);
 
-let mongoServer: MongoMemoryServer;
+// Get MongoDB URI from environment or use default for Docker setup
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/test_db';
 
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-});
+    try {
+        console.log('Connecting to MongoDB container...');
+        console.log('MongoDB URI:', mongoUri);
+        
+        // Connect to the MongoDB container
+        await mongoose.connect(mongoUri);
+        console.log('Connected to MongoDB successfully');
+        
+        // Verify we can use transactions (replica set is working)
+        const session = await mongoose.startSession();
+        await session.endSession();
+        console.log('MongoDB session created successfully - replica set is working');
+    } catch (error) {
+        console.error('ERROR in beforeAll:', error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+        throw error;
+    }
+}, 60000);
 
 afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
+    try {
+        console.log('Disconnecting from MongoDB...');
+        await mongoose.disconnect();
+        console.log('Mongoose disconnected successfully');
+    } catch (error) {
+        console.error('ERROR in afterAll:', error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+    }
+}, 60000);
 
 afterEach(async () => {
-    await Event.deleteMany({});
+    try {
+        console.log('Cleaning up test data...');
+        await Event.deleteMany({});
+        console.log('Test data cleaned successfully');
+    } catch (error) {
+        console.error('ERROR in afterEach:', error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
+        }
+    }
 });
 
 describe('Event API', () => {
