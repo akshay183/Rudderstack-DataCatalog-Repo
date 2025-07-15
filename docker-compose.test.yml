@@ -20,16 +20,10 @@ services:
     image: mongo:6.0
     ports:
       - "27017:27017"
-    # Start with a replica set to support transactions
-    command: mongod --replSet rs0 --bind_ip_all
+    environment:
+      - MONGO_INITDB_DATABASE=test_db
     networks:
       - test-network
-    # Add mongo tools for initialization script
-    volumes:
-      - ./scripts:/scripts
-    # Install mongodb shell
-    environment:
-      - MONGODB_INITDB_DATABASE=test_db
 
 networks:
   test-network:
