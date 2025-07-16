@@ -33,7 +33,7 @@ const tracking_plan_schema = new Schema(
         event: { type: String, ref: "Event" },
         properties: [
           {
-            property: { type: Schema.Types.ObjectId, ref: "Property" },
+            property: { type: String, ref: "Property" },
             required: { type: Boolean, default: false },
           },
         ],

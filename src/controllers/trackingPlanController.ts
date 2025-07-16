@@ -38,7 +38,7 @@ export const get_all_tracking_plans = async (req: Request, res: Response) => {
 
 export const get_tracking_plan_by_id = async (req: Request, res: Response) => {
     try {
-        const tracking_plan = await TrackingPlan.findById(req.params.id).populate({
+        const tracking_plan = await TrackingPlan.findOne({ ref: req.params.id }).populate({
             path: 'events.event',
             model: 'Event'
         }).populate({
@@ -56,7 +56,7 @@ export const get_tracking_plan_by_id = async (req: Request, res: Response) => {
 
 export const update_tracking_plan = async (req: Request, res: Response) => {
     try {
-        const tracking_plan = await TrackingPlan.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const tracking_plan = await TrackingPlan.findOneAndUpdate({ ref: req.params.id }, req.body, { new: true, runValidators: true });
         if (!tracking_plan) {
             return res.status(404).json({ message: 'Tracking plan not found' });
         }
@@ -68,7 +68,7 @@ export const update_tracking_plan = async (req: Request, res: Response) => {
 
 export const delete_tracking_plan = async (req: Request, res: Response) => {
     try {
-        const tracking_plan = await TrackingPlan.findByIdAndDelete(req.params.id);
+        const tracking_plan = await TrackingPlan.findOneAndDelete({ ref: req.params.id });
         if (!tracking_plan) {
             return res.status(404).json({ message: 'Tracking plan not found' });
         }
@@ -84,7 +84,7 @@ export const upsert_event_to_tracking_plan = async (req: Request, res: Response)
     try {
         const { tracking_plan_id, events } = req.body;
 
-        const tracking_plan = await TrackingPlan.findById(tracking_plan_id);
+        const tracking_plan = await TrackingPlan.findOne({ ref: tracking_plan_id });
         if (!tracking_plan) {
             return res.status(404).json({ message: 'Tracking plan not found' });
         }
