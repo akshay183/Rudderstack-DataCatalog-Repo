@@ -22,7 +22,7 @@ export const create_tracking_plan = async (req: Request, res: Response) => {
         .status(409)
         .json({ message: "Tracking plan with this name already exists." });
     }
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
 
@@ -140,7 +140,7 @@ export const upsert_event_to_tracking_plan = async (
         });
 
         const saved_event = await event_to_save.save();
-        event = saved_event.toObject();
+        event = { ...event, ...saved_event.toObject() };
         const ref = event.ref;
         events_inserted.push(ref!);
       } else {
@@ -201,6 +201,6 @@ export const upsert_event_to_tracking_plan = async (
   } catch (error: any) {
     await Property.deleteMany({ ref: { $in: properties_inserted } });
     await Event.deleteMany({ ref: { $in: events_inserted } });
-    res.status(400).json({ message: error.message });
+    res.status(500).json({ message: error.message });
   }
 };
