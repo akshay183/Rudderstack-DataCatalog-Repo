@@ -33,7 +33,13 @@ const tracking_plan_schema = new Schema(
           {
             property: { type: String, ref: "Property" },
           },
+          {
+            _id: false,
+          },
         ],
+      },
+      {
+        _id: false,
       },
     ],
   },
