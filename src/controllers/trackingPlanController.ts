@@ -196,8 +196,8 @@ export const upsert_event_to_tracking_plan = async (
       tracking_plan_event_st.add(event.ref!);
     }
 
-    await tracking_plan.save();
-    res.status(200).json(tracking_plan);
+    const result_tracking_plan = await tracking_plan.save();
+    res.status(200).json(result_tracking_plan.toObject());
   } catch (error: any) {
     await Property.deleteMany({ ref: { $in: properties_inserted } });
     await Event.deleteMany({ ref: { $in: events_inserted } });
