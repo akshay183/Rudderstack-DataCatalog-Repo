@@ -27,20 +27,24 @@ const tracking_plan_schema = new Schema(
     description: { type: String, maxlength: 100 },
     ref: { type: String, unique: true, index: true },
     events: [
-      {
-        event: { type: String, ref: "Event" },
-        properties: [
-          {
-            property: { type: String, ref: "Property" },
-          },
-          {
-            _id: false,
-          },
-        ],
-      },
-      {
-        _id: false,
-      },
+      new Schema(
+        {
+          event: { type: String, ref: "Event" },
+          properties: [
+            new Schema(
+              {
+                property: { type: String, ref: "Property" },
+              },
+              {
+                _id: false,
+              }
+            ),
+          ],
+        },
+        {
+          _id: false,
+        }
+      ),
     ],
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
