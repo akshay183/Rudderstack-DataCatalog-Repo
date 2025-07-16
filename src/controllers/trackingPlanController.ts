@@ -28,15 +28,7 @@ export const create_tracking_plan = async (req: Request, res: Response) => {
 
 export const get_all_tracking_plans = async (req: Request, res: Response) => {
   try {
-    const tracking_plans = await TrackingPlan.find()
-      .populate({
-        path: "events.event",
-        model: "Event",
-      })
-      .populate({
-        path: "events.properties.property",
-        model: "Property",
-      });
+    const tracking_plans = await TrackingPlan.find().lean().exec();
     res.status(200).json(tracking_plans);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
@@ -46,14 +38,8 @@ export const get_all_tracking_plans = async (req: Request, res: Response) => {
 export const get_tracking_plan_by_id = async (req: Request, res: Response) => {
   try {
     const tracking_plan = await TrackingPlan.findOne({ ref: req.params.id })
-      .populate({
-        path: "events.event",
-        model: "Event",
-      })
-      .populate({
-        path: "events.properties.property",
-        model: "Property",
-      });
+      .lean()
+      .exec();
     if (!tracking_plan) {
       return res.status(404).json({ message: "Tracking plan not found" });
     }
