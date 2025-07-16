@@ -1,7 +1,8 @@
 version: '3.8'
 services:
   app:
-    build: .
+    # build: .
+    image: 1972akshay/rudderstack-catalogue-app:1.0
     ports:
       - "3000:3000"
     environment:
