@@ -20,21 +20,21 @@ This is a simplified version of a Data Catalog API service that manages events, 
 
 The application will be running on `http://localhost:3000`.
 
+
 ### Running the Tests
 
-To run the tests in a Docker container using Ubuntu:
+You can run all unit and integration tests using the provided script:
 
-1. Ensure Docker is running on your system.
-2. Execute the test script from the project root:
-
-   ```bash
-   ./run-tests.sh
-   ```
+```bash
+./run-tests.sh
+```
 
 This script will:
 - Build a Docker container with the test environment
-- Run all tests using Jest
+- Run all Jest unit and integration tests
 - Output the test results to the console
+
+You can use this script for both unit and integration tests. Ensure Docker is running before executing the script.
 
 ## API Documentation
 
