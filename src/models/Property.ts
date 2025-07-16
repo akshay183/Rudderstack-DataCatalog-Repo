@@ -1,11 +1,14 @@
 import { Schema, model, Document } from "mongoose";
 
 interface IProperty extends Document {
-  name: string;
+  name?: string;
   type: "string" | "number" | "boolean";
   description?: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at?: Date;
+  updated_at?: Date;
+  validation?: Object;
+  required?: boolean;
+  ref?: string;
 }
 
 const property_schema = new Schema(
@@ -19,6 +22,7 @@ const property_schema = new Schema(
     description: { type: String, maxlength: 100 },
     validation: { type: Object },
     ref: { type: String, unique: true, index: true },
+    required: { type: Boolean },
   },
   { timestamps: { createdAt: "created_at", updatedAt: "updated_at" } }
 );

@@ -1,11 +1,14 @@
 import { Schema, model, Document } from "mongoose";
 
 interface IEvent extends Document {
-  name: string;
+  name?: string;
   type: "track" | "identify" | "alias" | "screen" | "page";
   description?: string;
-  created_at: Date;
-  updated_at: Date;
+  created_at?: Date;
+  updated_at?: Date;
+  additional_properties?: boolean;
+  validation?: Object;
+  ref?: string;
 }
 
 const event_schema = new Schema(

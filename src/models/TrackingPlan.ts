@@ -6,15 +6,13 @@ interface ITrackingPlan extends Document {
   name: string;
   description?: string;
   events: {
-    event: IEvent["_id"];
+    event: IEvent["ref"];
     properties: {
-      property: IProperty["_id"];
-      required: boolean;
+      property: IProperty["ref"];
     }[];
-    additional_properties: boolean;
   }[];
-  created_at: Date;
-  updated_at: Date;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 const tracking_plan_schema = new Schema(
@@ -34,10 +32,8 @@ const tracking_plan_schema = new Schema(
         properties: [
           {
             property: { type: String, ref: "Property" },
-            required: { type: Boolean, default: false },
           },
         ],
-        additional_properties: { type: Boolean, default: true },
       },
     ],
   },
