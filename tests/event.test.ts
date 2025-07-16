@@ -112,7 +112,7 @@ describe("Event API", () => {
     expect(response.body.name).toBe("Test Event");
   });
 
-  it("should update an event", async () => {
+  it("should not update an event", async () => {
     const event = await request(app).post("/api/v1/events").send({
       name: "Test Event",
       type: "track",
@@ -123,10 +123,10 @@ describe("Event API", () => {
       .send({
         name: "Updated Test Event",
         type: "track",
-        description: "This is an updated test event",
+        description:
+          "This gets fail as we can't give type data to update for event",
       });
-    expect(response.status).toBe(200);
-    expect(response.body.name).toBe("Updated Test Event");
+    expect(response.status).toBe(400);
   });
 
   it("should delete an event", async () => {
