@@ -1,30 +1,55 @@
 import request from 'supertest';
 import express from 'express';
 import mongoose from 'mongoose';
-import bodyParser from 'body-parser';
 import property_routes from '../src/routes/propertyRoutes';
 import Property from '../src/models/Property';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+// Import Jest functions
+import { describe, it, beforeAll, afterAll, afterEach, expect } from '@jest/globals';
 
 const app = express();
-app.use(bodyParser.json());
+app.use(express.json());
 app.use('/api/v1/properties', property_routes);
 
-let mongoServer: MongoMemoryServer;
+// Get MongoDB URI from environment or use default for Docker setup
+const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/test_db';
 
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
-    const mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri);
-});
+    try {
+        console.log('Connecting to MongoDB...');
+        await mongoose.connect(mongoUri, {
+            serverSelectionTimeoutMS: 30000,
+            socketTimeoutMS: 45000,
+            connectTimeoutMS: 30000,
+            waitQueueTimeoutMS: 30000,
+            directConnection: true,
+        });
+        console.log('Connected to MongoDB');
+    } catch (error) {
+        console.error('ERROR in beforeAll:', error);
+        if (error instanceof Error) {
+            console.error('Error message:', error.message);
+        }
+        throw error;
+    }
+}, 60000);
 
 afterAll(async () => {
-    await mongoose.disconnect();
-    await mongoServer.stop();
-});
+    try {
+        console.log('Disconnecting from MongoDB...');
+        await mongoose.disconnect();
+        console.log('Disconnected from MongoDB');
+    } catch (error) {
+        console.error('ERROR in afterAll:', error);
+    }
+}, 60000);
 
 afterEach(async () => {
-    await Property.deleteMany({});
+    try {
+        console.log('Cleaning up test data...');
+        await Property.deleteMany({});
+    } catch (error) {
+        console.error('ERROR in afterEach:', error);
+    }
 });
 
 describe('Property API', () => {

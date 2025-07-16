@@ -1,0 +1,30 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    volumes:
+      - .:/app
+      - /app/node_modules # Use container's node_modules
+    command: npm test
+    environment:
+      - NODE_ENV=test
+      - JEST_TIMEOUT=60000 # Set Jest timeout to 60 seconds
+      - MONGO_URI=mongodb://mongo:27017/test_db?directConnection=true
+    depends_on:
+      - mongo
+    networks:
+      - test-network
+  
+  # MongoDB service for tests
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=test_db
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
